@@ -68,17 +68,18 @@ public class CliClient {
 		Ini.Section config = (new Ini(new URL("file://" + getFilePath("cli.ini")))).get("DEFAULT");
 		
 		Server ser = new Server(config.get("base_url"), serverVerifier, serverEncrypter);
-		Device dev = new Device(new Integer(config.get("device_id")), deviceSigner, deviceCrypter); 
+		Device dev = new Device(new Integer(config.get("device_id")), deviceSigner, deviceCrypter);
+		
+		System.out.println("Looking for a new transaction...");
 		Transaction txn = ser.getLatestTransaction(dev);
-		
-		System.out.print("Message:\n\t" +
-						 txn.getText() + "\n");
-		
-		if (txn.getStatus() != Status.UNAUTHENTICATED) {
-			// already handled
-			System.out.println("Transaction already dealt with, was set to " + txn.getStatus().toString());
-			System.exit(0);
+		while (txn.getStatus() != Status.UNAUTHENTICATED) {
+			System.out.println("No dice, let's wait for one...");
+			Thread.sleep(7000);
+			txn = ser.getLatestTransaction(dev);
 		}
+		
+		System.out.print("Message:\n\t" + txn.getText() + "\n");
+		
 		while (txn.getStatus() == Status.UNAUTHENTICATED) {
 			System.out.println("Do you want to approve this? [y/N]");
 			String reply = in.nextLine().trim();
@@ -93,6 +94,7 @@ public class CliClient {
 		
 		ser.sendTransaction(txn, dev.getId(), deviceSigner);
 		System.out.println("Status is now " + ser.checkTransactionStatus(txn.getId()));
+		
 		} catch (KeyczarException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -101,6 +103,9 @@ public class CliClient {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
