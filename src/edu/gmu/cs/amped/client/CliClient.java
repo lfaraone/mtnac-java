@@ -40,23 +40,23 @@ public class CliClient {
 		// try the directory which this program is running from (not cwd)
 		File execDir = (new File(ClassLoader.getSystemClassLoader().getResource(".").getPath())).getParentFile();
 		File confFileInExecDir = new File(execDir, file);
-		if (confFileInExecDir.exists()) 
+		if (confFileInExecDir.exists())
 			return confFileInExecDir.getPath();
-		
+
 		String sep = System.getProperty("file.separator");
-		return System.getProperty("user.home") + sep + ".config" + sep + "mtnac" + sep + file;  
-		
+		return System.getProperty("user.home") + sep + ".config" + sep + "mtnac" + sep + file;
+
 	}
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
+
 		try {
 
-			
+
 		Scanner in = new Scanner(System.in);
-		
+
 		// to verify server sigs
 		Verifier serverVerifier = new Verifier(getFilePath("server_pub"));
 		Encrypter serverEncrypter = new Encrypter(getFilePath("server_enc_keys"));
@@ -64,12 +64,12 @@ public class CliClient {
 		Crypter deviceCrypter = new Crypter(getFilePath("device_crypt"));
 		// to sign responses to the server
 		Signer deviceSigner = new Signer(getFilePath("device_sign"));
-	
+
 		Ini.Section config = (new Ini(new URL("file://" + getFilePath("cli.ini")))).get("DEFAULT");
-		
+
 		Server ser = new Server(config.get("base_url"), serverVerifier, serverEncrypter);
 		Device dev = new Device(new Integer(config.get("device_id")), deviceSigner, deviceCrypter);
-		
+
 		System.out.println("Looking for a new transaction...");
 		Transaction txn = ser.getLatestTransaction(dev);
 		while (txn.getStatus() != Status.UNAUTHENTICATED) {
@@ -77,9 +77,9 @@ public class CliClient {
 			Thread.sleep(7000);
 			txn = ser.getLatestTransaction(dev);
 		}
-		
+
 		System.out.print("Message:\n\t" + txn.getText() + "\n");
-		
+
 		while (txn.getStatus() == Status.UNAUTHENTICATED) {
 			System.out.println("Do you want to approve this? [y/N]");
 			String reply = in.nextLine().trim();
@@ -91,10 +91,10 @@ public class CliClient {
 			else
 				System.out.println("Invalid entry.\n");
 		}
-		
+
 		ser.sendTransaction(txn, dev.getId(), deviceSigner);
 		System.out.println("Status is now " + ser.checkTransactionStatus(txn.getId()));
-		
+
 		} catch (KeyczarException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
